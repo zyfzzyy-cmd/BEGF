@@ -43,11 +43,23 @@ The demo is deterministic and uses only synthetic base partitions. It verifies t
 - `scripts/demo_synthetic.py`: small end-to-end public example.
 - `tests/`: operator identities, spectrum contract, and solver checks.
 - `data/README.md`: data/provenance contract. No private or benchmark data are bundled.
-- `paper/BEGF_ICASSP2027_Final.pdf`: final paper PDF snapshot used to transcribe the result table.
-- `paper_results.csv`: Table 2 results for the ten paper datasets, in percent. Empty metric cells preserve unavailable valid outputs; they are not imputed.
+- `paper_results.csv`: final Table 2 results for the ten paper datasets, in percent. Empty metric cells preserve unavailable valid outputs; they are not imputed.
 
-The final paper PDF is included as a convenience link: [BEGF ICASSP 2027 final PDF](paper/BEGF_ICASSP2027_Final.pdf). The corresponding final `main.tex` was not identifiable in the supplied workspace, so the paper source is intentionally not rewritten or claimed as part of this release.
+`paper_results.csv` contains the final Table 2 results for the ten datasets reported in the ICASSP 2027 paper. Missing valid outputs are preserved as empty entries and are not imputed.
 
-The formal comparison in `paper_results.csv` contains Base clusterings (avg.), CSPA, HGPA, MCLA, EAC, KCC, ECPCS-HC, GPEC, SDGCA, OMELET, RANGE, and BEGF. Values are transcribed from the final PDF Table 2; see `data/README.md` for the reproducibility boundary around the frozen benchmark inputs.
+The formal comparison methods in `paper_results.csv` are:
 
-No software license is declared yet. Add the authors' chosen license before public publication.
+- Base clusterings (avg.)
+- CSPA
+- HGPA
+- MCLA
+- EAC
+- KCC
+- ECPCS-HC
+- SDGCA
+- RANGE
+- BEGF
+
+See `data/README.md` for the reproducibility boundary around the frozen benchmark inputs.
+
+No software license is declared yet.
