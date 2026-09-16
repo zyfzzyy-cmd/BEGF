@@ -1,9 +1,10 @@
 import numpy as np
+from scipy import sparse
 
 from begf import BEGFConfig, PartitionProjectionLaplacian, build_x0, fit_begf
 
 
-def _x0() -> np.ndarray:
+def _x0() -> sparse.csr_matrix:
     labels = [
         np.array([0, 0, 1, 1, 2, 2, 0, 1, 2, 0]),
         np.array([0, 1, 1, 0, 2, 2, 1, 0, 2, 0]),
@@ -15,6 +16,7 @@ def _x0() -> np.ndarray:
 
 def test_eta_one_recovers_quadratic_filter() -> None:
     x0 = _x0()
+    dense_x0 = x0.toarray()
     mu = 0.7
     result = fit_begf(
         x0,
@@ -28,8 +30,8 @@ def test_eta_one_recovers_quadratic_filter() -> None:
         ),
     )
     operator = PartitionProjectionLaplacian(x0)
-    dense_laplacian = 2.0 * (np.eye(x0.shape[0]) - x0 @ x0.T)
-    expected = np.linalg.solve(np.eye(x0.shape[0]) + mu * dense_laplacian, x0)
+    dense_laplacian = 2.0 * (np.eye(x0.shape[0]) - dense_x0 @ dense_x0.T)
+    expected = np.linalg.solve(np.eye(x0.shape[0]) + mu * dense_laplacian, dense_x0)
     np.testing.assert_allclose(result.signal, expected, atol=1.0e-9)
     np.testing.assert_allclose(result.weights, np.ones(3), atol=1.0e-12)
     assert result.objective_history[-1] <= result.objective_history[0] + 1.0e-10

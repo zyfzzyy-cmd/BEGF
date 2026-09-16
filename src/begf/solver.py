@@ -7,6 +7,7 @@ from typing import Callable
 
 import numpy as np
 from numpy.typing import ArrayLike, NDArray
+from scipy import sparse
 
 from .ensemble import build_x0
 from .operators import PartitionProjectionLaplacian
@@ -169,17 +170,24 @@ def _cg_multi_rhs(
     return solution, last_iteration, relative_residual
 
 
-def fit_begf(x0: ArrayLike, config: BEGFConfig | None = None) -> BEGFResult:
+def fit_begf(
+    x0: ArrayLike | sparse.spmatrix, config: BEGFConfig | None = None
+) -> BEGFResult:
     """Fit BEGF to ``X0`` using the paper's matrix-free MM/CG updates."""
-    current_x0 = np.asarray(x0, dtype=np.float64)
-    if current_x0.ndim != 2 or min(current_x0.shape) < 1 or not np.isfinite(current_x0).all():
-        raise ValueError("X0 must be a nonempty finite two-dimensional array")
     settings = config if config is not None else BEGFConfig()
     _validate_config(settings)
-    operator = PartitionProjectionLaplacian(current_x0)
-    scales = operator.band_energies(current_x0) + settings.epsilon
-    current = current_x0.copy()
-    objective = _objective(operator, current, current_x0, scales, settings)
+    operator = PartitionProjectionLaplacian(x0)
+    x0_factor = operator.x0
+    if sparse.issparse(x0_factor):
+        x0_sparse = x0_factor
+        # Keep sparse X0 inside the operator for graph/Laplacian actions. This
+        # dense n-by-q copy is only the multi-RHS linear-system RHS.
+        rhs_dense = np.asarray(x0_sparse.toarray(), dtype=np.float64)
+    else:
+        rhs_dense = np.asarray(x0_factor, dtype=np.float64)
+    scales = operator.band_energies(rhs_dense) + settings.epsilon
+    current = rhs_dense.copy()
+    objective = _objective(operator, current, rhs_dense, scales, settings)
     objective_history = [objective]
     records: list[BEGFIteration] = []
     converged = False
@@ -197,12 +205,12 @@ def fit_begf(x0: ArrayLike, config: BEGFConfig | None = None) -> BEGFResult:
 
             candidate, cg_iterations, relative_residual = _cg_multi_rhs(
                 apply_system,
-                current_x0,
+                rhs_dense,
                 tolerance=cg_tolerance,
                 absolute_tolerance=settings.cg_absolute_tolerance,
                 max_iterations=max_cg_iterations,
             )
-            candidate_objective = _objective(operator, candidate, current_x0, scales, settings)
+            candidate_objective = _objective(operator, candidate, rhs_dense, scales, settings)
             allowed = objective + settings.monotonicity_tolerance * max(1.0, abs(objective))
             if candidate_objective <= allowed:
                 accepted = (candidate, cg_iterations, relative_residual, candidate_objective)

@@ -1,10 +1,11 @@
 import numpy as np
 import pytest
+from scipy import sparse
 
 from begf import PartitionProjectionLaplacian, build_x0
 
 
-def _example_x0() -> np.ndarray:
+def _example_x0() -> sparse.csr_matrix:
     partitions = [
         np.array([0, 0, 1, 1, 2, 2, 0, 1]),
         np.array([1, 1, 0, 0, 2, 2, 1, 0]),
@@ -16,21 +17,23 @@ def _example_x0() -> np.ndarray:
 
 def test_build_x0_uses_normalized_partition_blocks() -> None:
     x0 = _example_x0()
+    assert sparse.isspmatrix_csr(x0)
     assert x0.shape == (8, 9)
-    np.testing.assert_allclose(np.sum(x0 * x0), 3.0, atol=1.0e-12)
+    np.testing.assert_allclose(x0.multiply(x0).sum(), 3.0, atol=1.0e-12)
 
     first_partition = np.array([0, 0, 1, 1, 2, 2, 0, 1])
     counts = np.bincount(first_partition)
     expected_first_block = np.zeros((8, 3), dtype=float)
     expected_first_block[np.arange(8), first_partition] = 1.0
     expected_first_block /= np.sqrt(counts)[None, :]
-    np.testing.assert_allclose(x0[:, :3], expected_first_block / np.sqrt(3.0))
+    np.testing.assert_allclose(x0.toarray()[:, :3], expected_first_block / np.sqrt(3.0))
 
 
 def test_matrix_free_laplacian_and_bands_match_small_reference() -> None:
     x0 = _example_x0()
     operator = PartitionProjectionLaplacian(x0)
-    dense_laplacian = 2.0 * (np.eye(x0.shape[0]) - x0 @ x0.T)
+    dense_x0 = x0.toarray()
+    dense_laplacian = 2.0 * (np.eye(x0.shape[0]) - dense_x0 @ dense_x0.T)
     rng = np.random.default_rng(11)
     signal = rng.normal(size=(x0.shape[0], 4))
 
@@ -52,11 +55,12 @@ def test_matrix_free_laplacian_and_bands_match_small_reference() -> None:
 def test_spectrum_contract_and_scipy_adapter() -> None:
     x0 = _example_x0()
     operator = PartitionProjectionLaplacian(x0)
-    dense_laplacian = 2.0 * (np.eye(x0.shape[0]) - x0 @ x0.T)
+    dense_x0 = x0.toarray()
+    dense_laplacian = 2.0 * (np.eye(x0.shape[0]) - dense_x0 @ dense_x0.T)
     eigenvalues = np.linalg.eigvalsh(dense_laplacian)
     assert eigenvalues.min() >= -1.0e-10
     assert eigenvalues.max() <= 2.0 + 1.0e-10
-    diagnostics = operator.validate()
+    diagnostics = operator.validate(check_theorem=True)
     assert diagnostics["formula"] == "2*(I-X0*X0.T)"
     assert diagnostics["matrix_free"] is True
     assert diagnostics["theorem_premise_verified"] is True
@@ -66,5 +70,6 @@ def test_spectrum_contract_and_scipy_adapter() -> None:
 
 
 def test_theorem_premise_is_checked() -> None:
+    operator = PartitionProjectionLaplacian(1.01 * np.eye(3))
     with pytest.raises(ValueError, match="theorem premise"):
-        PartitionProjectionLaplacian(1.01 * np.eye(3))
+        operator.validate(check_theorem=True)

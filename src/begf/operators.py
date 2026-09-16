@@ -6,6 +6,7 @@ from typing import Any
 
 import numpy as np
 from numpy.typing import ArrayLike, NDArray
+from scipy import sparse
 from scipy.sparse.linalg import LinearOperator
 
 
@@ -13,49 +14,74 @@ class PartitionProjectionLaplacian:
     """Matrix-free ``L = 2 * (I - X0 X0.T)``.
 
     Only the low-rank factor ``X0`` is stored. The constructor verifies the
-    theorem premise ``0 <= X0.T @ X0 <= I``; for ``X0`` returned by
-    :func:`begf.build_x0`, this follows from averaging orthogonal partition
-    projectors.
+    theorem premise ``0 <= X0.T @ X0 <= I`` only when the optional diagnostic
+    check is requested. For ``X0`` returned by :func:`begf.build_x0`, the
+    premise follows from averaging orthogonal partition projectors, so normal
+    construction does not need a q-by-q eigendecomposition.
     """
 
-    def __init__(self, x0: ArrayLike, *, tolerance: float = 1.0e-10) -> None:
-        matrix = np.asarray(x0, dtype=np.float64)
-        if matrix.ndim != 2 or min(matrix.shape) < 1:
-            raise ValueError("X0 must be a nonempty two-dimensional array")
-        if not np.isfinite(matrix).all():
-            raise ValueError("X0 contains NaN or infinite values")
+    def __init__(
+        self,
+        x0: ArrayLike | sparse.spmatrix,
+        *,
+        tolerance: float = 1.0e-10,
+        validate_theorem: bool = False,
+    ) -> None:
+        if sparse.issparse(x0):
+            stored: sparse.csr_matrix | NDArray[np.float64] = sparse.csr_matrix(
+                x0, dtype=np.float64, copy=True
+            )
+            if min(stored.shape) < 1:
+                raise ValueError("X0 must be a nonempty two-dimensional array")
+            if stored.nnz and not np.isfinite(stored.data).all():
+                raise ValueError("X0 contains NaN or infinite values")
+            stored.sum_duplicates()
+            stored.sort_indices()
+        else:
+            matrix = np.asarray(x0, dtype=np.float64)
+            if matrix.ndim != 2 or min(matrix.shape) < 1:
+                raise ValueError("X0 must be a nonempty two-dimensional array")
+            if not np.isfinite(matrix).all():
+                raise ValueError("X0 contains NaN or infinite values")
+            stored = np.ascontiguousarray(matrix).copy()
+            stored.setflags(write=False)
         tolerance = float(tolerance)
         if not np.isfinite(tolerance) or tolerance < 0.0:
             raise ValueError("tolerance must be finite and nonnegative")
 
-        stored = np.ascontiguousarray(matrix).copy()
-        stored.setflags(write=False)
-        gram_raw = stored.T @ stored
-        gram = 0.5 * (gram_raw + gram_raw.T)
-        gram_eigenvalues = np.linalg.eigvalsh(gram)
-        minimum = float(gram_eigenvalues[0])
-        maximum = float(gram_eigenvalues[-1])
-        if minimum < -tolerance or maximum > 1.0 + tolerance:
-            raise ValueError(
-                "theorem premise failed: eigenvalues of X0.T @ X0 must lie in [0, 1], "
-                f"got [{minimum}, {maximum}]"
-            )
-
         self._x0 = stored
-        self._gram_eigenvalues = gram_eigenvalues
-        self._gram_eigenvalues.setflags(write=False)
         self.shape = (int(stored.shape[0]), int(stored.shape[0]))
         self.dtype = np.dtype(np.float64)
         self._tolerance = tolerance
+        self._theorem_diagnostics: tuple[float, float] | None = None
+        if validate_theorem:
+            self._theorem_diagnostics = self._compute_theorem_diagnostics()
 
     @property
-    def x0(self) -> NDArray[np.float64]:
-        """The immutable normalized ensemble factor."""
+    def x0(self) -> sparse.csr_matrix | NDArray[np.float64]:
+        """The normalized ensemble factor, stored as CSR when supplied sparse."""
         return self._x0
 
     @property
     def n_samples(self) -> int:
         return self.shape[0]
+
+    def _compute_theorem_diagnostics(self) -> tuple[float, float]:
+        """Compute the optional q-by-q theorem diagnostic."""
+        gram_raw = self._x0.T @ self._x0
+        if sparse.issparse(gram_raw):
+            gram_raw = gram_raw.toarray()
+        gram = np.asarray(gram_raw, dtype=np.float64)
+        gram = 0.5 * (gram + gram.T)
+        gram_eigenvalues = np.linalg.eigvalsh(gram)
+        minimum = float(gram_eigenvalues[0])
+        maximum = float(gram_eigenvalues[-1])
+        if minimum < -self._tolerance or maximum > 1.0 + self._tolerance:
+            raise ValueError(
+                "theorem premise failed: eigenvalues of X0.T @ X0 must lie in [0, 1], "
+                f"got [{minimum}, {maximum}]"
+            )
+        return minimum, maximum
 
     def _prepare(self, values: ArrayLike) -> tuple[NDArray[np.float64], bool]:
         raw = np.asarray(values, dtype=np.float64)
@@ -126,18 +152,34 @@ class PartitionProjectionLaplacian:
             rmatmat=self.apply_laplacian,
         )
 
-    def validate(self) -> dict[str, Any]:
-        """Return the theorem-backed spectrum and storage diagnostics."""
-        minimum = float(self._gram_eigenvalues[0])
-        maximum = float(self._gram_eigenvalues[-1])
-        return {
+    def validate(self, *, check_theorem: bool = False) -> dict[str, Any]:
+        """Return storage diagnostics, optionally checking the q-by-q theorem premise.
+
+        ``check_theorem=True`` is intended for small tests or explicit
+        diagnostics. The default path reports that the check was not run and
+        does not form ``X0.T @ X0``.
+        """
+        diagnostics: dict[str, Any] = {
             "laplacian_source": "partition_projection",
             "formula": "2*(I-X0*X0.T)",
             "matrix_free": True,
             "shape": [self.n_samples, self.n_samples],
             "x0_shape": [int(size) for size in self._x0.shape],
-            "x0_gram_min_eigenvalue": minimum,
-            "x0_gram_max_eigenvalue": maximum,
+            "x0_gram_min_eigenvalue": None,
+            "x0_gram_max_eigenvalue": None,
             "laplacian_spectrum_interval": [0.0, 2.0],
-            "theorem_premise_verified": True,
+            "theorem_premise_checked": False,
+            "theorem_premise_verified": None,
         }
+        if self._theorem_diagnostics is not None or check_theorem:
+            minimum, maximum = self._theorem_diagnostics or self._compute_theorem_diagnostics()
+            self._theorem_diagnostics = (minimum, maximum)
+            diagnostics.update(
+                {
+                    "x0_gram_min_eigenvalue": minimum,
+                    "x0_gram_max_eigenvalue": maximum,
+                    "theorem_premise_checked": True,
+                    "theorem_premise_verified": True,
+                }
+            )
+        return diagnostics

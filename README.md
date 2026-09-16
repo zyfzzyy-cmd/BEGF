@@ -33,7 +33,9 @@ python scripts/demo_synthetic.py
 python -m pytest -q
 ```
 
-The demo is deterministic and uses only synthetic base partitions. It verifies the operator contract and runs the complete BEGF MM/CG path without requiring private datasets.
+The demo is deterministic and uses only synthetic base partitions. It verifies the operator contract and runs the complete BEGF MM/CG path without requiring benchmark datasets.
+
+Benchmark datasets and precomputed partition pools are not redistributed in this release. The public tests do not regenerate the benchmark results. The production operator stores `X0` as a sparse CSR matrix, applies it through sparse-dense products, and never materializes a \(n\times n\) sample graph. The final readout performs row-wise L2 normalization followed by k-means.
 
 ## Repository map
 
@@ -42,8 +44,13 @@ The demo is deterministic and uses only synthetic base partitions. It verifies t
 - `src/begf/solver.py`: convex pseudo-Huber objective, MM weights, and SPD CG updates.
 - `scripts/demo_synthetic.py`: small end-to-end public example.
 - `tests/`: operator identities, spectrum contract, and solver checks.
-- `data/README.md`: data/provenance contract. No private or benchmark data are bundled.
-- `paper_results.csv`: final Table 2 results for the ten paper datasets, in percent. Empty metric cells preserve unavailable valid outputs; they are not imputed.
+- `data/README.md`: benchmark input format and release boundary.
+- `paper_results.csv`
+- `paper_ablation.csv`: exact Table 3 ablation record.
+- `figure1_band_weights.csv`: exact band-weight source for the three Figure 1 datasets.
+- `scripts/plot_figure1.py`: self-contained SVG plot generator for the band-weight record.
+
+`paper_ablation.csv` and `figure1_band_weights.csv` transcribe verified paper diagnostics; they are not independently reproduced from raw benchmark inputs bundled in this repository.
 
 `paper_results.csv` contains the final Table 2 results for the ten datasets reported in the ICASSP 2027 paper. Missing valid outputs are preserved as empty entries and are not imputed.
 
@@ -60,6 +67,6 @@ The formal comparison methods in `paper_results.csv` are:
 - RANGE
 - BEGF
 
-See `data/README.md` for the reproducibility boundary around the frozen benchmark inputs.
+See `data/README.md` for the benchmark input format and release boundary.
 
 No software license is declared yet.
