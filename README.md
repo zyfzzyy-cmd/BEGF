@@ -50,6 +50,19 @@ Benchmark datasets and precomputed partition pools are not redistributed in this
 - `figure1_band_weights.csv`: exact band-weight source for the three Figure 1 datasets.
 - `scripts/plot_figure1.py`: self-contained SVG plot generator for the band-weight record.
 
+## ICASSP 2027 paper records
+
+The final r6 paper record is represented by:
+
+- `paper_results.csv`: Table 2 result record.
+- `paper_protocol_r6.json`: frozen reporting and BEGF configuration.
+- `paper_result_provenance_r6.csv`: provenance for unavailable Table 2 results.
+- `paper_ablation.csv`: Table 3 ablation record.
+- `figure1_band_weights.csv`: Figure 1 mechanism values.
+- `scripts/plot_figure1.py`: Figure 1 plotting script.
+
+The public implementation reproduces the BEGF formulation and sparse operators. Exact paper Table 2 benchmarking requires frozen or precomputed ensemble inputs that are not redistributed when licensing, size, or provenance constraints prevent their release; the public package therefore does not claim one-click reproduction of Table 2.
+
 `paper_ablation.csv` and `figure1_band_weights.csv` transcribe verified paper diagnostics; they are not independently reproduced from raw benchmark inputs bundled in this repository.
 
 `paper_results.csv` contains the final Table 2 results for the ten datasets reported in the ICASSP 2027 paper. Missing valid outputs are preserved as empty entries and are not imputed.
