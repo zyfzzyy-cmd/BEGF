@@ -52,11 +52,11 @@ Benchmark datasets and precomputed partition pools are not redistributed in this
 
 ## ICASSP 2027 paper records
 
-The final r6 paper record is represented by:
+The final ICASSP 2027 paper record is represented by:
 
 - `paper_results.csv`: Table 2 result record.
-- `paper_protocol_r6.json`: frozen reporting and BEGF configuration.
-- `paper_result_provenance_r6.csv`: provenance for unavailable Table 2 results.
+- `paper_protocol.json`: frozen reporting and BEGF configuration.
+- `paper_result_provenance.csv`: provenance for unavailable Table 2 results.
 - `paper_ablation.csv`: Table 3 ablation record.
 - `figure1_band_weights.csv`: Figure 1 mechanism values.
 - `scripts/plot_figure1.py`: Figure 1 plotting script.

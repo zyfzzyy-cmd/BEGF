@@ -1,6 +1,6 @@
 {
-  "schema_version": "paper_protocol_r6",
-  "paper_version": "r6",
+  "schema": "paper_protocol",
+  "paper": "ICASSP 2027",
   "reporting": {
     "stochastic_seed": 9002,
     "deterministic_methods": [
