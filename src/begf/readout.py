@@ -46,5 +46,8 @@ def cluster_embedding(
         n_clusters=int(n_clusters),
         random_state=random_state,
         n_init=int(n_init),
+        max_iter=300,
+        tol=1.0e-4,
+        algorithm="lloyd",
     )
     return np.asarray(model.fit_predict(normalized), dtype=np.int64)

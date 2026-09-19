@@ -2,7 +2,7 @@
 
 This repository is the public, reproducible companion for the ICASSP 2027 paper **Band-Energy Adaptive Graph Filtering for Ensemble Clustering (BEGF)**.
 
-The released implementation follows the final paper exactly:
+The released implementation follows the BEGF formulation used in the final paper:
 
 \[
 X_0=\frac{1}{\sqrt m}[F^{(1)},\ldots,F^{(m)}],\qquad
@@ -37,6 +37,19 @@ The demo is deterministic and uses only synthetic base partitions. It verifies t
 
 Benchmark datasets and precomputed partition pools are not redistributed in this release. The public tests do not regenerate the benchmark results. The production operator stores `X0` as a sparse CSR matrix, applies it through sparse-dense products, and never materializes a \(n\times n\) sample graph. The final readout performs row-wise L2 normalization followed by k-means.
 
+### Frozen ICASSP 2027 readout
+
+```python
+labels = cluster_embedding(
+    result.signal,
+    n_clusters=k,
+    random_state=9002,
+    n_init=20,
+)
+```
+
+The remaining k-means settings follow the frozen paper configuration: `max_iter=300`, `tol=1e-4`, and Lloyd updates.
+
 ## Repository map
 
 - `src/begf/ensemble.py`: normalized ensemble representation \(X_0\).
@@ -60,6 +73,11 @@ The final ICASSP 2027 paper record is represented by:
 - `paper_ablation.csv`: Table 3 ablation record.
 - `figure1_band_weights.csv`: Figure 1 mechanism values.
 - `scripts/plot_figure1.py`: Figure 1 plotting script.
+
+The frozen benchmark settings used for the paper are recorded separately in
+`paper_protocol.json`. The public solver implements the same BEGF formulation,
+while generic API defaults should not be interpreted as the frozen benchmark
+configuration.
 
 The public implementation reproduces the BEGF formulation and sparse operators. Exact paper Table 2 benchmarking requires frozen or precomputed ensemble inputs that are not redistributed when licensing, size, or provenance constraints prevent their release; the public package therefore does not claim one-click reproduction of Table 2.
 
