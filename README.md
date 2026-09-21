@@ -60,7 +60,8 @@ The frozen benchmark protocol records CG with `rtol=1e-10`, `atol=0`, and the ba
 - `scripts/demo_synthetic.py`: small end-to-end public example.
 - `tests/`: operator identities, spectrum contract, and solver checks.
 - `data/README.md`: benchmark input format and release boundary.
-- `paper_results.csv`
+- `paper_results.csv`: displayed two-decimal paper Table 2 record.
+- `paper_results_full_precision.csv`: frozen unrounded ranking/provenance record.
 - `paper_ablation.csv`: exact Table 3 ablation record.
 - `figure1_band_weights.csv`: exact band-weight source for the three Figure 1 datasets.
 - `scripts/plot_figure1.py`: self-contained SVG plot generator for the band-weight record.
@@ -69,7 +70,8 @@ The frozen benchmark protocol records CG with `rtol=1e-10`, `atol=0`, and the ba
 
 The final ICASSP 2027 paper record is represented by:
 
-- `paper_results.csv`: Table 2 displayed result record.
+- `paper_results.csv`: displayed two-decimal paper Table 2 record.
+- `paper_results_full_precision.csv`: frozen unrounded ranking/provenance record.
 - `paper_protocol.json`: frozen reporting and BEGF configuration.
 - `paper_result_provenance.csv`: provenance for unavailable Table 2 results.
 - `paper_ablation.csv`: Table 3 ablation record.
@@ -85,7 +87,7 @@ The public implementation reproduces the BEGF formulation and sparse operators. 
 
 `paper_ablation.csv` and `figure1_band_weights.csv` transcribe verified paper diagnostics; they are not independently reproduced from raw benchmark inputs bundled in this repository.
 
-`paper_results.csv` contains the final two-decimal values displayed in Table 2 for the ten datasets reported in the ICASSP 2027 paper. The manuscript's best/second-best markings were determined from the frozen unrounded experiment records; those full-precision ranking values are not reconstructed from the rounded display CSV. Missing valid outputs are preserved as empty entries and are not imputed.
+`paper_results.csv` is the displayed two-decimal paper Table 2 record for the ten datasets reported in the ICASSP 2027 paper. `paper_results_full_precision.csv` is the frozen unrounded ranking/provenance record. Best/second-best markings and the reported ranking counts use exact full-precision values; consensus-method ranking excludes `Base clusterings (avg.)`. Values are not reconstructed from the rounded display CSV, and two-decimal display ties do not alter the full-precision ranking. Under this protocol, BEGF is best or tied-best in 18 of the 30 dataset-metric cells and second-best in seven additional cells. Missing valid outputs are preserved as empty entries and are not imputed.
 
 The formal comparison methods in `paper_results.csv` are:
 
