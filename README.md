@@ -14,7 +14,7 @@ L=2(I-X_0X_0^\top),\qquad
 LZ=2\left[Z-X_0(X_0^\top Z)\right].
 \]
 
-The three Dirichlet band operators are evaluated from successive actions of the same matrix-free operator:
+The three Bernstein band operators are evaluated from successive actions of the same matrix-free operator:
 
 \[
 R_{\mathrm{lo}}=L-L^2+\tfrac14L^3,\quad
@@ -50,6 +50,8 @@ labels = cluster_embedding(
 
 The remaining k-means settings follow the frozen paper configuration: `max_iter=300`, `tol=1e-4`, and Lloyd updates.
 
+The frozen benchmark protocol records CG with `rtol=1e-10`, `atol=0`, and the backend-default iteration cap. The public standalone solver uses an implementation-specific finite fallback cap when `cg_max_iterations=None`; generic API defaults therefore should not be interpreted as the exact frozen benchmark backend configuration.
+
 ## Repository map
 
 - `src/begf/ensemble.py`: normalized ensemble representation \(X_0\).
@@ -67,7 +69,7 @@ The remaining k-means settings follow the frozen paper configuration: `max_iter=
 
 The final ICASSP 2027 paper record is represented by:
 
-- `paper_results.csv`: Table 2 result record.
+- `paper_results.csv`: Table 2 displayed result record.
 - `paper_protocol.json`: frozen reporting and BEGF configuration.
 - `paper_result_provenance.csv`: provenance for unavailable Table 2 results.
 - `paper_ablation.csv`: Table 3 ablation record.
@@ -83,7 +85,7 @@ The public implementation reproduces the BEGF formulation and sparse operators. 
 
 `paper_ablation.csv` and `figure1_band_weights.csv` transcribe verified paper diagnostics; they are not independently reproduced from raw benchmark inputs bundled in this repository.
 
-`paper_results.csv` contains the final Table 2 results for the ten datasets reported in the ICASSP 2027 paper. Missing valid outputs are preserved as empty entries and are not imputed.
+`paper_results.csv` contains the final two-decimal values displayed in Table 2 for the ten datasets reported in the ICASSP 2027 paper. The manuscript's best/second-best markings were determined from the frozen unrounded experiment records; those full-precision ranking values are not reconstructed from the rounded display CSV. Missing valid outputs are preserved as empty entries and are not imputed.
 
 The formal comparison methods in `paper_results.csv` are:
 
