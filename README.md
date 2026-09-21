@@ -102,4 +102,6 @@ The formal comparison methods in `paper_results.csv` are:
 
 See `data/README.md` for the benchmark input format and release boundary.
 
-No software license is declared yet.
+## License
+
+This repository is released under the MIT License. See `LICENSE` for details.
