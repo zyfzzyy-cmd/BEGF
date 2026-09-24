@@ -1,4 +1,4 @@
 variant,profile,ACC_percent,ARI_percent,NMI_percent,source
-Quadratic GF,fixed,49.01,32.99,47.02,ICASSP2027_Table3
-Global-M GF,adaptive scalar,49.02,33.00,47.02,ICASSP2027_Table3
-BEGF,adaptive spectral,49.07,33.03,47.05,ICASSP2027_Table3
+Quadratic GF,fixed,52.26,36.69,49.87,ICASSP2027_Final_Table3
+Global-M GF,adaptive scalar,52.27,36.70,49.86,ICASSP2027_Final_Table3
+BEGF,adaptive spectral,52.32,36.73,49.89,ICASSP2027_Final_Table3
