@@ -8,6 +8,25 @@ For a benchmark rerun, provide one record per dataset with:
 dataset_id,dataset,n_samples,n_features,n_classes,partition_file,labels_file,sha256,protocol
 ```
 
-The partition file must contain the base-partition labels used to build `X0` for the benchmark run; the target labels are used only after filtering for external metrics. Each partition must have one label per sample and may use arbitrary label names. `begf.build_x0` converts the labels to deterministic nonempty-cluster indicator blocks.
+The partition file must contain the base-partition labels used to build `X0` for the benchmark run; target labels are used only after filtering for external metrics. Each partition must have one label per sample and may use arbitrary label names. `begf.build_x0` converts the labels to deterministic nonempty-cluster indicator blocks.
 
-`paper_results.csv` is the displayed two-decimal paper Table 2 record for the ten datasets reported in the ICASSP 2027 paper. It reports percentages, uses the paper's dataset names and dimensions, and leaves unavailable valid outputs empty with `valid=NO`; no missing value is imputed. `paper_results_full_precision.csv` is the frozen unrounded ranking/provenance record. Best/second-best markings and ranking counts use exact full-precision values; consensus-method ranking excludes `Base clusterings (avg.)`. Display-only ties do not change the full-precision ranking. Under this protocol, BEGF is best or tied-best in 18 of 30 dataset-metric cells and second-best in seven additional cells. These files are reporting records; the public tests validate their consistency but do not regenerate the benchmark experiments.
+The final ICASSP 2027 dataset order is:
+
+1. Yale
+2. BBCSport
+3. ProteinFold
+4. COIL20
+5. Communities
+6. Obesity
+7. PAMAP2
+8. EMNIST-Balanced
+9. EMNIST-Letters
+10. Walking
+
+BBCSport contains two supplied views with feature dimensions 3,183 and 3,203.
+
+`paper_results.csv` is the final displayed two-decimal Table 2 record. It contains the eight formal consensus methods reported in the manuscript, preserves unavailable entries with `valid=NO`, and does not impute missing values. The final manuscript reports BEGF as best or tied-best in 16 of 30 dataset-metric cells and second-best in 12 additional cells.
+
+The public record intentionally stores the manuscript display precision only; additional unreleased precision is not reconstructed from rounded values. The frozen BEGF and readout settings are stored in `paper_protocol.json`.
+
+These files are reporting records. Public tests validate their internal consistency but do not reproduce the full benchmark experiments because the frozen benchmark partition pools are not redistributed.
