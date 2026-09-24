@@ -1,6 +1,6 @@
 # Band-Energy Adaptive Graph Filtering for Ensemble Clustering
 
-This repository is the public, reproducible companion for the ICASSP 2027 paper **Band-Energy Adaptive Graph Filtering for Ensemble Clustering (BEGF)**.
+This repository is the public companion for the ICASSP 2027 paper **Band-Energy Adaptive Graph Filtering for Ensemble Clustering (BEGF)**.
 
 The released implementation follows the BEGF formulation used in the final paper:
 
@@ -22,7 +22,7 @@ R_{\mathrm{mid}}=L^2-\tfrac12L^3,\quad
 R_{\mathrm{hi}}=\tfrac14L^3.
 \]
 
-No sample-by-sample \(n\times n\) matrix is constructed by the production code.
+No sample-by-sample \(n\times n\) graph is constructed by the production code.
 
 ## Quick start
 
@@ -35,9 +35,11 @@ python -m pytest -q
 
 The demo is deterministic and uses only synthetic base partitions. It verifies the operator contract and runs the complete BEGF MM/CG path without requiring benchmark datasets.
 
-Benchmark datasets and precomputed partition pools are not redistributed in this release. The public tests do not regenerate the benchmark results. The production operator stores `X0` as a sparse CSR matrix, applies it through sparse-dense products, and never materializes a \(n\times n\) sample graph. The final readout performs row-wise L2 normalization followed by k-means.
+Benchmark datasets and precomputed partition pools are not redistributed in this release. The public tests do not regenerate the benchmark results. The production operator stores `X0` as a sparse CSR matrix, applies it through sparse-dense products, and never materializes an \(n\times n\) sample graph. The final readout performs row-wise L2 normalization followed by k-means.
 
-### Frozen ICASSP 2027 readout
+## Frozen ICASSP 2027 configuration
+
+The final readout uses:
 
 ```python
 labels = cluster_embedding(
@@ -48,59 +50,51 @@ labels = cluster_embedding(
 )
 ```
 
-The remaining k-means settings follow the frozen paper configuration: `max_iter=300`, `tol=1e-4`, and Lloyd updates.
+The remaining k-means settings are `max_iter=300`, `tol=1e-4`, and Lloyd updates. The frozen benchmark protocol records CG with `rtol=1e-10`, `atol=0`, and the backend-default iteration cap.
 
-The frozen benchmark protocol records CG with `rtol=1e-10`, `atol=0`, and the backend-default iteration cap. The public standalone solver uses an implementation-specific finite fallback cap when `cg_max_iterations=None`; generic API defaults therefore should not be interpreted as the exact frozen benchmark backend configuration.
+For D1--D10, the final paper uses ensemble sizes
+
+`30 / 20 / 120 / 10 / 10 / 10 / 70 / 10 / 10 / 10`
+
+and dataset-specific \(\mu\) values
+
+`1 / 0.01 / 0.01 / 1 / 1 / 100 / 10 / 10 / 10 / 10`.
+
+The dataset order is Yale, BBCSport, ProteinFold, COIL20, Communities, Obesity, PAMAP2, EMNIST-Balanced, EMNIST-Letters, and Walking. BBCSport uses two supplied views with feature dimensions 3,183 and 3,203.
 
 ## Repository map
 
 - `src/begf/ensemble.py`: normalized ensemble representation \(X_0\).
 - `src/begf/operators.py`: matrix-free \(L\), band actions, energies, and validation.
 - `src/begf/solver.py`: convex pseudo-Huber objective, MM weights, and SPD CG updates.
+- `src/begf/readout.py`: row normalization and k-means consensus readout.
 - `scripts/demo_synthetic.py`: small end-to-end public example.
-- `tests/`: operator identities, spectrum contract, and solver checks.
+- `tests/`: operator, solver, readout, sparse-release, and final paper-record checks.
 - `data/README.md`: benchmark input format and release boundary.
-- `paper_results.csv`: displayed two-decimal paper Table 2 record.
-- `paper_results_full_precision.csv`: frozen unrounded ranking/provenance record.
-- `paper_ablation.csv`: exact Table 3 ablation record.
-- `figure1_band_weights.csv`: exact band-weight source for the three Figure 1 datasets.
-- `scripts/plot_figure1.py`: self-contained SVG plot generator for the band-weight record.
-
-## ICASSP 2027 paper records
-
-The final ICASSP 2027 paper record is represented by:
-
-- `paper_results.csv`: displayed two-decimal paper Table 2 record.
-- `paper_results_full_precision.csv`: frozen unrounded ranking/provenance record.
-- `paper_protocol.json`: frozen reporting and BEGF configuration.
-- `paper_result_provenance.csv`: provenance for unavailable Table 2 results.
-- `paper_ablation.csv`: Table 3 ablation record.
-- `figure1_band_weights.csv`: Figure 1 mechanism values.
+- `paper_results.csv`: final displayed two-decimal Table 2 record.
+- `paper_protocol.json`: final frozen paper configuration.
+- `paper_ablation.csv`: final Table 3 macro-average ablation record.
+- `figure1_band_weights.csv`: Figure 1 band-weight source.
 - `scripts/plot_figure1.py`: Figure 1 plotting script.
 
-The frozen benchmark settings used for the paper are recorded separately in
-`paper_protocol.json`. The public solver implements the same BEGF formulation,
-while generic API defaults should not be interpreted as the frozen benchmark
-configuration.
+## Final ICASSP 2027 paper record
 
-The public implementation reproduces the BEGF formulation and sparse operators. Exact paper Table 2 benchmarking requires frozen or precomputed ensemble inputs that are not redistributed when licensing, size, or provenance constraints prevent their release; the public package therefore does not claim one-click reproduction of Table 2.
+`paper_results.csv` mirrors the final manuscript Table 2. The formal comparison methods are:
 
-`paper_ablation.csv` and `figure1_band_weights.csv` transcribe verified paper diagnostics; they are not independently reproduced from raw benchmark inputs bundled in this repository.
-
-`paper_results.csv` is the displayed two-decimal paper Table 2 record for the ten datasets reported in the ICASSP 2027 paper. `paper_results_full_precision.csv` is the frozen unrounded ranking/provenance record. Best/second-best markings and the reported ranking counts use exact full-precision values; consensus-method ranking excludes `Base clusterings (avg.)`. Values are not reconstructed from the rounded display CSV, and two-decimal display ties do not alter the full-precision ranking. Under this protocol, BEGF is best or tied-best in 18 of the 30 dataset-metric cells and second-best in seven additional cells. Missing valid outputs are preserved as empty entries and are not imputed.
-
-The formal comparison methods in `paper_results.csv` are:
-
-- Base clusterings (avg.)
-- CSPA
 - HGPA
-- MCLA
 - EAC
 - KCC
 - ECPCS-HC
+- ECPCS-MC
 - SDGCA
 - RANGE
 - BEGF
+
+The final manuscript reports BEGF as best or tied-best in **16 of 30** dataset-metric cells and second-best in **12** additional cells. The public CSV stores the displayed two-decimal values and validity mask used by the manuscript. It does **not** infer unreleased numerical precision from rounded values.
+
+Unavailable method-dataset pairs remain empty with `valid=NO`; no missing result is imputed. Exact paper benchmarking still requires the frozen or precomputed ensemble inputs, which are not redistributed when licensing, size, or provenance constraints prevent release.
+
+`paper_ablation.csv` and `figure1_band_weights.csv` transcribe the verified diagnostics reported in the manuscript; the public tests validate record consistency but do not regenerate the benchmark experiments.
 
 See `data/README.md` for the benchmark input format and release boundary.
 
